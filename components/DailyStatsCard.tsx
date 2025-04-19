@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { Calendar } from "lucide-react-native";
+import { Calendar, Trophy } from "lucide-react-native";
 
 import { formatDistance } from "@/utils/formatter";
 import { Theme } from "@/constants/Colors";
@@ -24,6 +24,7 @@ const DailyStatsCard = ({
 
   // Calculate progress towards daily goal (110km)
   const progressPercentage = Math.min((todayDistance / 110000) * 100, 100);
+  const pointsToEarn = todayDistance >= 110000 ? 50 : 0;
 
   return (
     <View style={styles.container}>
@@ -45,6 +46,12 @@ const DailyStatsCard = ({
         <Text style={styles.progressText}>
           {formatDistance(todayDistance)} / 110 km
         </Text>
+        {todayDistance < 110000 && (
+          <Text style={styles.pointsInfo}>
+            Ride {formatDistance(110000 - todayDistance)} more to earn 50
+            points!
+          </Text>
+        )}
       </View>
 
       <View style={styles.statsContainer}>
@@ -53,9 +60,13 @@ const DailyStatsCard = ({
           <Text style={styles.statLabel}>Rides Today</Text>
         </View>
 
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{loyaltyPoints}</Text>
-          <Text style={styles.statLabel}>Loyalty Points</Text>
+        <View style={[styles.statItem, styles.pointsItem]}>
+          <View style={styles.pointsHeader}>
+            <Trophy color={Theme.colors.primary} size={16} />
+            <Text style={styles.pointsTitle}>Points</Text>
+          </View>
+          <Text style={styles.statValue}>{pointsToEarn}</Text>
+          <Text style={styles.statLabel}>Available</Text>
         </View>
       </View>
     </View>
@@ -109,6 +120,12 @@ const styles = StyleSheet.create({
     color: Theme.colors.textSecondary,
     textAlign: "right",
   },
+  pointsInfo: {
+    fontFamily: "Inter-Regular",
+    fontSize: 12,
+    color: Theme.colors.textSecondary,
+    marginTop: Theme.spacing.xs,
+  },
   statsContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -120,6 +137,20 @@ const styles = StyleSheet.create({
     borderRadius: Theme.borderRadius.md,
     padding: Theme.spacing.md,
     marginHorizontal: Theme.spacing.xs,
+  },
+  pointsItem: {
+    backgroundColor: Theme.colors.backgroundSecondary,
+  },
+  pointsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: Theme.spacing.xs,
+  },
+  pointsTitle: {
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
+    color: Theme.colors.textSecondary,
+    marginLeft: Theme.spacing.xs,
   },
   statValue: {
     fontFamily: "Inter-Bold",

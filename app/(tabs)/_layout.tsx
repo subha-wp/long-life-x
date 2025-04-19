@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { Platform } from "react-native";
-import { Gauge, History, Settings, Leaf } from "lucide-react-native";
+import { Gauge, History, Settings, Leaf, Trophy } from "lucide-react-native";
 import { Theme } from "@/constants/Colors";
 
 export default function TabLayout() {
@@ -54,6 +54,15 @@ export default function TabLayout() {
             <History color={color} size={size} />
           ),
           headerTitle: "Ride History",
+          headerTitleAlign: "center",
+        }}
+      />
+      <Tabs.Screen
+        name="loyalty"
+        options={{
+          title: "Loyalty",
+          tabBarIcon: ({ color, size }) => <Trophy color={color} size={size} />,
+          headerTitle: "Loyalty Points",
           headerTitleAlign: "center",
         }}
       />
