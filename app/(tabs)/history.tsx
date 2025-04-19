@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,7 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { RideHistoryService } from "@/services/RideHistoryService";
-import { Ride } from "@/types/ride";
+import type { Ride } from "@/types/ride";
 import RideHistoryItem from "@/components/RideHistoryItem";
 import EmptyState from "@/components/EmptyState";
 import { Theme } from "@/constants/Colors";
@@ -85,7 +87,8 @@ export default function History() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <RideHistoryItem ride={item} />}
           contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
+          style={styles.flatList}
         />
       ) : (
         <EmptyState
@@ -142,5 +145,9 @@ const styles = StyleSheet.create({
     fontFamily: "Inter-Regular",
     fontSize: 16,
     color: Theme.colors.textSecondary,
+  },
+  flatList: {
+    flex: 1,
+    width: "100%",
   },
 });

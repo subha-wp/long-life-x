@@ -1,6 +1,6 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
-import { Calendar, MapPin, Clock } from "lucide-react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { MapPin, LandPlot } from "lucide-react-native";
 
 import { formatDate, formatDistance, formatDuration } from "@/utils/formatter";
 import { Ride } from "@/types/ride";
@@ -15,13 +15,7 @@ const RideHistoryItem = ({ ride }: RideHistoryItemProps) => {
     <TouchableOpacity style={styles.container}>
       <View style={styles.content}>
         <View style={styles.imageContainer}>
-          <Image
-            source={{
-              uri: "https://img.freepik.com/premium-vector/electric-car-charging-station-vector-illustration-green-glowing-ev-filling-up-battery_261737-686.jpg",
-            }}
-            style={styles.mapImage}
-            resizeMode="cover"
-          />
+          <LandPlot size={65} color={Theme.colors.primary} />
         </View>
 
         <View style={styles.detailsContainer}>
@@ -68,11 +62,9 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: 100,
-    height: "100%",
-  },
-  mapImage: {
-    width: "100%",
-    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Theme.colors.backgroundSecondary,
   },
   detailsContainer: {
     flex: 1,
