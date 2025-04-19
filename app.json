@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "long-life",
-    "slug": "long-life",
+    "name": "Long Life",
+    "slug": "long-life-x",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -15,7 +15,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.devcodersubha.longlifex"
     },
     "web": {
       "bundler": "metro",
@@ -36,6 +37,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "c414110c-39f7-45bd-bad1-60f183a21297"
+      }
     }
   }
 }
