@@ -1,6 +1,7 @@
-import { create } from 'zustand';
-import { Ride, RideLocation } from '@/types/ride';
-import { RideHistoryService } from '@/services/RideHistoryService';
+import { create } from "zustand";
+import { Ride, RideLocation } from "@/types/ride";
+import { RideHistoryService } from "@/services/RideHistoryService";
+import { startOfDay, isToday } from "date-fns";
 
 interface TrackingState {
   isTracking: boolean;
@@ -12,7 +13,8 @@ interface TrackingState {
   locations: RideLocation[];
   lastRide: Ride | null;
   todayDistance: number;
-  
+  todayRidesCount: number;
+
   startTracking: () => void;
   pauseTracking: () => void;
   resumeTracking: () => void;
@@ -21,6 +23,7 @@ interface TrackingState {
   updateCurrentDuration: (seconds: number) => void;
   updateCurrentLocation: (location: RideLocation) => void;
   finalizeRide: (locations: RideLocation[]) => void;
+  loadTodayStats: () => Promise<void>;
 }
 
 export const useTrackingStore = create<TrackingState>((set, get) => ({
@@ -33,7 +36,8 @@ export const useTrackingStore = create<TrackingState>((set, get) => ({
   locations: [],
   lastRide: null,
   todayDistance: 0,
-  
+  todayRidesCount: 0,
+
   startTracking: () => {
     set({
       isTracking: true,
@@ -44,56 +48,81 @@ export const useTrackingStore = create<TrackingState>((set, get) => ({
       locations: [],
     });
   },
-  
+
   pauseTracking: () => {
     set({ isPaused: true });
   },
-  
+
   resumeTracking: () => {
     set({ isPaused: false });
   },
-  
+
   stopTracking: () => {
     set({
       isTracking: false,
       isPaused: false,
     });
   },
-  
+
   updateCurrentDistance: (distance: number) => {
-    set(state => ({
+    set((state) => ({
       currentDistance: state.currentDistance + distance,
       todayDistance: state.todayDistance + distance,
     }));
   },
-  
+
   updateCurrentDuration: (seconds: number) => {
-    set(state => ({
+    set((state) => ({
       currentDuration: state.currentDuration + seconds,
     }));
   },
-  
+
   updateCurrentLocation: (location: RideLocation) => {
-    set(state => ({
+    set((state) => ({
       currentLocation: location,
       locations: [...state.locations, location],
     }));
   },
-  
+
+  loadTodayStats: async () => {
+    try {
+      const rideHistoryService = new RideHistoryService();
+      const allRides = await rideHistoryService.getAllRides();
+
+      // Filter rides for today
+      const todayRides = allRides.filter((ride) => isToday(ride.date));
+
+      // Calculate total distance for today
+      const todayTotalDistance = todayRides.reduce(
+        (total, ride) => total + ride.distance,
+        0
+      );
+
+      // Get the last ride
+      const lastRide = allRides[0]; // Already sorted by date in RideHistoryService
+
+      set({
+        todayDistance: todayTotalDistance,
+        todayRidesCount: todayRides.length,
+        lastRide: lastRide || null,
+      });
+    } catch (error) {
+      console.error("Failed to load today stats:", error);
+    }
+  },
+
   finalizeRide: async (locations: RideLocation[]) => {
     const { currentDistance, currentDuration, startTime } = get();
-    
+
     if (!startTime || currentDistance === 0 || locations.length < 2) {
       // Don't save if there's no meaningful data
       return;
     }
-    
+
     const endTime = new Date();
-    const averageSpeed = currentDistance / (currentDuration > 0 ? currentDuration : 1);
-    
-    // Calculate elevation and other metrics if available
-    // This would require additional processing of location data
-    
+    const averageSpeed =
+      currentDistance / (currentDuration > 0 ? currentDuration : 1);
+
     const ride: Ride = {
       id: `ride-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       date: new Date(),
@@ -101,25 +130,30 @@ export const useTrackingStore = create<TrackingState>((set, get) => ({
       endTime: endTime,
       duration: currentDuration,
       distance: currentDistance,
-      startLocation: 'Starting point', // Would need reverse geocoding
-      endLocation: 'Ending point', // Would need reverse geocoding
+      startLocation: "Starting point", // Would need reverse geocoding
+      endLocation: "Ending point", // Would need reverse geocoding
       locations: locations,
       averageSpeed: averageSpeed,
     };
-    
+
     try {
       const rideHistoryService = new RideHistoryService();
       await rideHistoryService.saveRide(ride);
-      
+
+      // Reload today's stats after saving the ride
+      await get().loadTodayStats();
+
       set({
-        lastRide: ride,
         currentDistance: 0,
         currentDuration: 0,
         locations: [],
         startTime: null,
       });
     } catch (error) {
-      console.error('Failed to save ride:', error);
+      console.error("Failed to save ride:", error);
     }
   },
 }));
+
+// Initialize today's stats
+useTrackingStore.getState().loadTodayStats();

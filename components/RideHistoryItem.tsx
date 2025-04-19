@@ -17,7 +17,7 @@ const RideHistoryItem = ({ ride }: RideHistoryItemProps) => {
         <View style={styles.imageContainer}>
           <Image
             source={{
-              uri: "https://images.pexels.com/photos/5466263/pexels-photo-5466263.jpeg?auto=compress&cs=tinysrgb&w=600",
+              uri: "https://img.freepik.com/premium-vector/electric-car-charging-station-vector-illustration-green-glowing-ev-filling-up-battery_261737-686.jpg",
             }}
             style={styles.mapImage}
             resizeMode="cover"

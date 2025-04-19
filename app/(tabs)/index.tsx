@@ -31,10 +31,12 @@ export default function Dashboard() {
     currentDistance,
     currentDuration,
     todayDistance,
+    todayRidesCount,
     startTracking,
     pauseTracking,
     resumeTracking,
     stopTracking,
+    loadTodayStats,
   } = useTrackingStore();
 
   const locationService = useRef(new LocationService()).current;
@@ -49,6 +51,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     requestLocationPermission();
+    // Load today's stats when component mounts
+    loadTodayStats();
   }, []);
 
   const requestLocationPermission = async () => {
@@ -81,7 +85,6 @@ export default function Dashboard() {
       if (!locationPermission) return;
     }
 
-    // Start animation
     animatedScale.value = withSpring(1.1, { damping: 10 });
     setTimeout(() => {
       animatedScale.value = withSpring(1);
@@ -132,6 +135,8 @@ export default function Dashboard() {
       await locationService.stopLocationTracking();
       await rideDetectionService.stopRideDetection();
       stopTracking();
+      // Reload today's stats after stopping
+      loadTodayStats();
     } catch (error) {
       console.error("Failed to stop tracking:", error);
       Alert.alert("Error", "Failed to stop tracking. Please try again.");
@@ -183,8 +188,8 @@ export default function Dashboard() {
             <RideSummaryCard />
             <DailyStatsCard
               todayDistance={todayDistance}
-              ridesCount={0}
-              loyaltyPoints={0}
+              ridesCount={todayRidesCount}
+              loyaltyPoints={todayRidesCount * 10}
             />
 
             <TouchableOpacity

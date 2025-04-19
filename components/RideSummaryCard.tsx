@@ -30,7 +30,7 @@ const RideSummaryCard = () => {
         <View style={styles.mapContainer}>
           <Image
             source={{
-              uri: "https://images.pexels.com/photos/3354346/pexels-photo-3354346.jpeg?auto=compress&cs=tinysrgb&w=600",
+              uri: "https://img.freepik.com/premium-vector/electric-car-charging-station-vector-illustration-green-glowing-ev-filling-up-battery_261737-686.jpg",
             }}
             style={styles.mapImage}
             resizeMode="cover"
