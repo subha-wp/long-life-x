@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { Ride, RideLocation } from "@/types/ride";
 import { RideHistoryService } from "@/services/RideHistoryService";
+import { LoyaltyService } from "@/services/LoyaltyService";
 import { startOfDay, isToday } from "date-fns";
 
 interface TrackingState {
@@ -14,6 +15,7 @@ interface TrackingState {
   lastRide: Ride | null;
   todayDistance: number;
   todayRidesCount: number;
+  totalLoyaltyPoints: number;
 
   startTracking: () => void;
   pauseTracking: () => void;
@@ -37,6 +39,7 @@ export const useTrackingStore = create<TrackingState>((set, get) => ({
   lastRide: null,
   todayDistance: 0,
   todayRidesCount: 0,
+  totalLoyaltyPoints: 0,
 
   startTracking: () => {
     set({
@@ -87,7 +90,9 @@ export const useTrackingStore = create<TrackingState>((set, get) => ({
   loadTodayStats: async () => {
     try {
       const rideHistoryService = new RideHistoryService();
+      const loyaltyService = LoyaltyService.getInstance();
       const allRides = await rideHistoryService.getAllRides();
+      const totalPoints = await loyaltyService.getTotalPoints();
 
       // Filter rides for today
       const todayRides = allRides.filter((ride) => isToday(ride.date));
@@ -105,6 +110,7 @@ export const useTrackingStore = create<TrackingState>((set, get) => ({
         todayDistance: todayTotalDistance,
         todayRidesCount: todayRides.length,
         lastRide: lastRide || null,
+        totalLoyaltyPoints: totalPoints,
       });
     } catch (error) {
       console.error("Failed to load today stats:", error);
@@ -140,6 +146,10 @@ export const useTrackingStore = create<TrackingState>((set, get) => ({
       const rideHistoryService = new RideHistoryService();
       await rideHistoryService.saveRide(ride);
 
+      // Calculate and save loyalty points
+      const loyaltyService = LoyaltyService.getInstance();
+      await loyaltyService.addLoyaltyPoints(ride.id, ride.distance);
+
       // Reload today's stats after saving the ride
       await get().loadTodayStats();
 
@@ -154,6 +164,3 @@ export const useTrackingStore = create<TrackingState>((set, get) => ({
     }
   },
 }));
-
-// Initialize today's stats
-useTrackingStore.getState().loadTodayStats();

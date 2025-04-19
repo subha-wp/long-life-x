@@ -1,10 +1,15 @@
-import { LocationService } from './LocationService';
-import { useTrackingStore } from '@/stores/trackingStore';
-import { useSettings } from '@/hooks/useSettings';
-import { calculateDistance } from '@/utils/distanceCalculator';
+import { LocationService } from "./LocationService";
+import { NotificationService } from "./NotificationService";
+import { useTrackingStore } from "@/stores/trackingStore";
+import { useSettings } from "@/hooks/useSettings";
+import { calculateDistance } from "@/utils/distanceCalculator";
+import { formatDistance, formatDuration } from "@/utils/formatter";
+import * as Notifications from "expo-notifications";
+import { Platform } from "react-native";
 
 export class RideDetectionService {
   private locationService: LocationService | null = null;
+  private notificationService: NotificationService;
   private detectionIntervalId: NodeJS.Timeout | null = null;
   private lastDetectionTime: number = 0;
   private isRiding: boolean = false;
@@ -14,6 +19,27 @@ export class RideDetectionService {
 
   constructor() {
     this.locationService = new LocationService();
+    this.notificationService = NotificationService.getInstance();
+    if (Platform.OS !== "web") {
+      this.setupNotificationListeners();
+    }
+  }
+
+  private setupNotificationListeners() {
+    Notifications.addNotificationResponseReceivedListener((response) => {
+      const actionId = response.actionIdentifier;
+      const { pauseTracking, stopTracking } = useTrackingStore.getState();
+
+      switch (actionId) {
+        case "PAUSE_RIDE":
+          this.isPaused = true;
+          pauseTracking();
+          break;
+        case "STOP_RIDE":
+          this.stopRideDetection();
+          break;
+      }
+    });
   }
 
   async startRideDetection(): Promise<void> {
@@ -37,7 +63,7 @@ export class RideDetectionService {
         this.handleLocationUpdate
       );
     } catch (error) {
-      console.error('Error starting ride detection:', error);
+      console.error("Error starting ride detection:", error);
       throw error;
     }
   }
@@ -51,6 +77,8 @@ export class RideDetectionService {
     const locations =
       (await this.locationService?.stopLocationTracking()) || [];
     const { finalizeRide } = useTrackingStore.getState();
+
+    await this.notificationService.clearRideNotification();
 
     if (locations.length > 0) {
       finalizeRide(locations);
@@ -86,6 +114,15 @@ export class RideDetectionService {
   private detectRide(): void {
     const currentTime = Date.now();
     const { settings } = useSettings.getState();
+    const { currentDistance, currentDuration } = useTrackingStore.getState();
+
+    // Update notification with current stats
+    if (!this.isPaused) {
+      this.notificationService.updateRideNotification(
+        formatDistance(currentDistance),
+        formatDuration(currentDuration)
+      );
+    }
 
     // If enough time has passed, update the current duration
     if (this.isRiding && !this.isPaused) {
