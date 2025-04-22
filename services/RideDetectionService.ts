@@ -16,6 +16,7 @@ export class RideDetectionService {
   private lastLocation: any = null;
   private isPaused: boolean = false;
   private idleStartTime: number | null = null;
+  private updateInterval: number = 1000; // Update every second
 
   constructor() {
     this.locationService = new LocationService();
@@ -48,7 +49,7 @@ export class RideDetectionService {
     try {
       await this.locationService?.startLocationTracking();
       this.lastDetectionTime = Date.now();
-      this.isRiding = false;
+      this.isRiding = true;
       this.isPaused = false;
       this.idleStartTime = null;
 
@@ -56,7 +57,10 @@ export class RideDetectionService {
       const { settings } = useSettings.getState();
 
       // Set up detection interval
-      this.detectionIntervalId = setInterval(() => this.detectRide(), 2000);
+      this.detectionIntervalId = setInterval(
+        () => this.detectRide(),
+        this.updateInterval
+      );
 
       // Set up location update callback
       this.locationService?.setLocationUpdateCallback(
@@ -104,8 +108,10 @@ export class RideDetectionService {
         this.detectSpeedChange(speed);
       }
 
-      const { updateCurrentDistance } = useTrackingStore.getState();
-      updateCurrentDistance(distance);
+      if (distance > 0) {
+        const { updateCurrentDistance } = useTrackingStore.getState();
+        updateCurrentDistance(distance);
+      }
     }
 
     this.lastLocation = location;
@@ -114,7 +120,14 @@ export class RideDetectionService {
   private detectRide(): void {
     const currentTime = Date.now();
     const { settings } = useSettings.getState();
-    const { currentDistance, currentDuration } = useTrackingStore.getState();
+    const { currentDistance, currentDuration, updateCurrentDuration } =
+      useTrackingStore.getState();
+
+    // Update duration if not paused
+    if (this.isRiding && !this.isPaused) {
+      const elapsed = Math.floor((currentTime - this.lastDetectionTime) / 1000);
+      updateCurrentDuration(1); // Increment by 1 second
+    }
 
     // Update notification with current stats
     if (!this.isPaused) {
@@ -122,13 +135,6 @@ export class RideDetectionService {
         formatDistance(currentDistance),
         formatDuration(currentDuration)
       );
-    }
-
-    // If enough time has passed, update the current duration
-    if (this.isRiding && !this.isPaused) {
-      const { updateCurrentDuration } = useTrackingStore.getState();
-      const elapsed = Math.floor((currentTime - this.lastDetectionTime) / 1000);
-      updateCurrentDuration(elapsed);
     }
 
     this.lastDetectionTime = currentTime;

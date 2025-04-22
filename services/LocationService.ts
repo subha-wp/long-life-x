@@ -13,7 +13,10 @@ export class LocationService {
   private lastLocation: Location.LocationObject | null = null;
   private onLocationUpdate: ((location: RideLocation) => void) | null = null;
   private minSpeedThreshold: number = 0.5; // minimum speed in m/s (roughly 1.8 km/h)
-  private accuracyThreshold: number = 10; // maximum accuracy in meters
+  private accuracyThreshold: number = 20; // maximum accuracy in meters
+  private initializationDelay: number = 5000; // 5 seconds delay before accepting locations
+
+  private startTime: number = 0;
 
   constructor() {}
 
@@ -39,11 +42,13 @@ export class LocationService {
       // Configure location accuracy
       await Location.enableNetworkProviderAsync();
 
+      this.startTime = Date.now();
+
       // Start watching position with high accuracy
       this.locationSubscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.BestForNavigation,
-          distanceInterval: 1, // minimum change (in meters) to trigger an update
+          distanceInterval: 2, // minimum change (in meters) to trigger an update
           timeInterval: settings.trackingInterval,
         },
         this.handleLocationUpdate
@@ -52,6 +57,7 @@ export class LocationService {
       this.isTracking = true;
       this.isPaused = false;
       this.locations = [];
+      this.lastLocation = null;
     } catch (error) {
       console.error("Error starting location tracking:", error);
       throw error;
@@ -99,6 +105,11 @@ export class LocationService {
     newLocation: Location.LocationObject,
     lastLocation: Location.LocationObject | null
   ): boolean {
+    // Skip initial readings during initialization period
+    if (Date.now() - this.startTime < this.initializationDelay) {
+      return false;
+    }
+
     // Check if accuracy is within threshold
     if (newLocation.coords.accuracy > this.accuracyThreshold) {
       return false;
@@ -117,11 +128,16 @@ export class LocationService {
       newLocation.coords.longitude
     );
 
+    // Reject unrealistic movements (more than 100 m/s or ~360 km/h)
+    if (distance / timeDiff > 100) {
+      return false;
+    }
+
     // Calculate speed in meters per second
     const speed = distance / timeDiff;
 
-    // Return true only if speed is above threshold
-    return speed >= this.minSpeedThreshold;
+    // Return true only if speed is above threshold and reasonable
+    return speed >= this.minSpeedThreshold && speed < 100;
   }
 
   private handleLocationUpdate = (location: Location.LocationObject): void => {
